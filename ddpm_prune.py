@@ -26,6 +26,10 @@ parser.add_argument("--thr", type=float, default=0.05, help="threshold for diff-
 
 args = parser.parse_args()
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+args.device = device
+
 batch_size = args.batch_size
 dataset = args.dataset
 
