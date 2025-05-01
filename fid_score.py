@@ -77,6 +77,8 @@ parser.add_argument('path', type=str, nargs=2,
                           'to .npz statistic files'))
 
 
+
+
 IMAGE_EXTENSIONS = {'bmp', 'jpg', 'jpeg', 'pgm', 'png', 'ppm',
                     'tif', 'tiff', 'webp'}
 
@@ -328,6 +330,10 @@ def main():
         device = torch.device('cuda' if (torch.cuda.is_available()) else 'cpu')
     else:
         device = torch.device(args.device)
+        
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    args.device = device
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
