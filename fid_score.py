@@ -329,6 +329,10 @@ def main():
     else:
         device = torch.device(args.device)
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    args.device = device
+
     if args.num_workers is None:
         try:
             num_cpus = len(os.sched_getaffinity(0))
