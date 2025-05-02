@@ -15,3 +15,14 @@ python fid_score.py --save-stats data/cifar10_images run/fid_stats_cifar10.npz -
 
 6)
 python fid_score.py run/sample/ddpm_cifar10_pruned run/fid_stats_cifar10.npz --device cuda:0 --batch-size 256
+
+--------------------------------------------------------------------------------------------------------------------
+Cheetah
+
+screen -S <session_name> — Start a new session with a custom name
+
+screen -r <session_name or PID> — Reattach to a detached session.
+
+Ctrl+a d — Detach from the session.
+
+Ctrl+a k — Kill the current window.
