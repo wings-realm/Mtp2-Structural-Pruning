@@ -149,4 +149,4 @@ if __name__=='__main__':
         images = pipeline(num_inference_steps=100, batch_size=args.batch_size, generator=generator, output_type="numpy").images
         os.makedirs(os.path.join(args.save_path, 'vis'), exist_ok=True)
         torchvision.utils.save_image(torch.from_numpy(images).permute([0, 3, 1, 2]), "{}/vis/after_pruning.png".format(args.save_path))
-        
+

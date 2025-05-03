@@ -3,7 +3,8 @@ import subprocess
 commands = [
     {
         "desc": "Step 1: Pruning the pretrained DDPM model",
-        "cmd": "python ddpm_prune.py --dataset cifar10 --model_path pretrained/ddpm_ema_cifar10 --save_path run/pruned/ddpm_cifar10_pruned --pruning_ratio 0.3 --batch_size 128 --pruner diff-pruning --thr 0.05 --device cuda:0"
+        # "cmd": "python ddpm_prune.py --dataset cifar10 --model_path pretrained/ddpm_ema_cifar10 --save_path run/pruned/ddpm_cifar10_pruned --pruning_ratio 0.3 --batch_size 128 --pruner diff-pruning --thr 0.05 --device cuda:0"
+        "cmd": "python ddpm_prune_hybrid.py --dataset cifar10 --model_path pretrained/ddpm_ema_cifar10 --save_path run/pruned/ddpm_cifar10_pruned --pruning_ratio 0.3 --batch_size 128 --pruner hybrid --lambda_weight 0.5 --device cuda:0"
     },
     {
         "desc": "Step 2: Fine-tuning the pruned model",
