@@ -138,6 +138,7 @@ if __name__=='__main__':
             model_output = model(noisy_images, timesteps).sample
             loss = torch.nn.functional.mse_loss(model_output, noise)
             loss.backward()
+            loss_max = max(loss_max, loss.item())
 
             if args.pruner == 'diff-pruning':
                 if loss > loss_max: loss_max = loss
@@ -146,6 +147,7 @@ if __name__=='__main__':
     
         if args.pruner == 'hybrid':
             print("Computing latent sensitivity...")
+
             def sampler(z):
                 scheduler.set_timesteps(10)
                 z = z.to(args.device)
@@ -154,8 +156,8 @@ if __name__=='__main__':
                     z = scheduler.step(noise_pred, t, z).prev_sample
                 return z
 
-
             latent_scores = compute_latent_sensitivity(model, sampler, num_samples=10, alpha=0.1, batch_size=args.batch_size)
+            
             taylor_scores = {}
             for name, param in model.named_parameters():
                 if is_channel_weight(param) and param.grad is not None:
@@ -167,8 +169,8 @@ if __name__=='__main__':
                 ls = latent_scores[name] / (latent_scores[name].max() + 1e-8)
                 hybrid_scores[name] = args.lambda_weight * ts + (1 - args.lambda_weight) * ls
                 imp2 = HybridImportance(hybrid_scores) # override score used by pruner
+            imp = imp2
         
-        imp = imp2
         pruner.importance = imp
 
         for g in pruner.step(interactive=True):
