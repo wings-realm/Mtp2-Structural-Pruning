@@ -41,6 +41,14 @@ import torchvision.transforms as TF
 from PIL import Image
 from scipy import linalg
 from torch.nn.functional import adaptive_avg_pool2d
+from tqdm import tqdm
+
+
+from skimage.io import imread
+from skimage.color import rgb2gray
+from skimage.transform import resize
+from skimage.metrics import structural_similarity as ssim
+import csv
 
 try:
     from tqdm import tqdm
@@ -72,9 +80,12 @@ parser.add_argument('--save-stats', action='store_true',
                     help=('Generate an npz archive from a directory of samples. '
                           'The first path is used as input and the second as output.'))
 
-parser.add_argument('path', type=str, nargs=2,
+parser.add_argument('path', type=str, nargs=3,
                     help=('Paths to the generated images or '
                           'to .npz statistic files'))
+
+parser.add_argument('--pruning_ratio', type=str, default='none',
+                    help='Pruning ratio to name the CSV output')
 
 
 
@@ -97,6 +108,55 @@ class ImagePathDataset(torch.utils.data.Dataset):
         if self.transforms is not None:
             img = self.transforms(img)
         return img
+    
+def collect_all_images(root_dir):
+    images = []
+    for dirpath, _, filenames in os.walk(root_dir):
+        for f in filenames:
+            if f.lower().endswith(('.png', '.jpg', '.jpeg')):
+                images.append(os.path.join(dirpath, f))
+    return images
+
+
+def compute_mean_ssim(generated_dir, gt_dir):
+    gen_images = collect_all_images(generated_dir)
+    gt_images_map = {os.path.basename(p): p for p in collect_all_images(gt_dir)}
+
+    ssim_scores = []
+    image_names = []
+
+    for gen_path in tqdm(gen_images, desc="Calculating SSIM"):
+        image_name = os.path.basename(gen_path)
+        if image_name not in gt_images_map:
+            continue  # skip if no matching ground truth image
+
+        
+        gen_img = imread(gen_path).astype(np.float32)
+        gt_img = imread(gt_images_map[image_name]).astype(np.float32)
+
+        if gen_img.shape != gt_img.shape:
+            gt_img = resize(gt_img, gen_img.shape, preserve_range=True, anti_aliasing=True)
+
+        if gen_img.max() > 1.0:
+            gen_img /= 255.0
+        if gt_img.max() > 1.0:
+            gt_img /= 255.0
+
+
+
+        # Check if image is color (3 channels) or grayscale (2 channels)
+        if gen_img.ndim == 3 and gt_img.ndim == 3:
+            # Compare SSIM across all channels (R, G, B)
+            score = ssim(gen_img, gt_img, data_range=gen_img.max() - gen_img.min(), channel_axis=-1, win_size=3)
+        else:
+            # For grayscale images (single channel), we use the regular SSIM
+            score = ssim(gen_img, gt_img, data_range=gen_img.max() - gen_img.min())
+
+        ssim_scores.append(score)
+        image_names.append(image_name)
+
+
+    return np.mean(ssim_scores) if ssim_scores else 0.0
 
 
 def get_activations(files, model, batch_size=50, dims=2048, device='cpu',
@@ -331,13 +391,11 @@ def main():
     else:
         device = torch.device(args.device)
         
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    args.device = device
+    
+    pruned_img, path_nz,pretrained_img = args.path
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-    args.device = device
+    
 
     if args.num_workers is None:
         try:
@@ -363,7 +421,26 @@ def main():
                                           num_workers,
                                           num_samples=args.num_samples,
                                           res = args.res, dataset_name=args.dataset_name)
-    print('FID: ', fid_value)
+    
+
+
+    
+    mean_ssim = compute_mean_ssim(pruned_img,pretrained_img)
+    
+    safe_ratio = args.pruning_ratio.replace('.', '_')
+    output_dir = f"run{safe_ratio}/pruned_model_sampling_scores"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Write FID and SSIM to CSV
+    csv_filename = os.path.join(output_dir, f"scores_{args.pruning_ratio}.csv")
+    with open(csv_filename, mode='w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["FID", "SSIM"])
+        writer.writerow([fid_value, mean_ssim])
+
+    print(f"\nFID: {fid_value:.4f}")
+    print(f"SSIM: {mean_ssim:.4f}")
+    print(f"Saved scores to `{csv_filename}`")
 
 
 if __name__ == '__main__':
