@@ -240,6 +240,10 @@ def parse_args():
     )
 
     args = parser.parse_args()
+    
+    if args.device.startswith("cuda"):
+        torch.cuda.set_device(torch.device(args.device))
+    
     env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
     if env_local_rank != -1 and env_local_rank != args.local_rank:
         args.local_rank = env_local_rank
