@@ -4,6 +4,31 @@ This repository demonstrates structured pruning and fine-tuning on a pretrained 
 
 ---
 
+### 0. Requirements, Data and Pretrained Model
+
+* Requirements
+```bash
+pip install -r requirements.txt
+```
+ 
+* Data
+  
+Download and extract CIFAR-10 images to *data/cifar10_images* for training and evaluation.
+```bash
+python tools/extract_cifar10.py --output data
+```
+* Pretrained Models
+  
+The following script will download an official DDPM model and convert it to the format of Huggingface Diffusers. You can find the converted model at *pretrained/ddpm_ema_cifar10*. It is an EMA version of [google/ddpm-cifar10-32](https://huggingface.co/google/ddpm-cifar10-32)
+```bash
+bash tools/convert_cifar10_ddpm_ema.sh
+```
+
+(Optional) You can also download a pre-converted model using wget
+```bash
+wget https://github.com/VainF/Diff-Pruning/releases/download/v0.0.1/ddpm_ema_cifar10.zip
+```
+
 ## 🔧 1. Pruning
 
 Prune a pretrained DDPM model using Diff-Pruning with a given pruning ratio and threshold.
