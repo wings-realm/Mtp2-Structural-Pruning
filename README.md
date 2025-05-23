@@ -92,3 +92,9 @@ python fid_score.py \
     --device cuda:0 \
     --batch-size 256
 ```
+
+## 🔧 Merged Command
+
+There are files such as for only hybrid running-> ddpm_prune_hybrid.py, you can run it by hybrid_run_all.py
+ddpm_hessian2_prune.py, you can run it by hessian_run_all.py
+ddpm_hybrid_hessian.py, you can run it by hybrid_hessian_run_all.py
